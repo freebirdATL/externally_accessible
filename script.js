@@ -5,6 +5,7 @@
   const decimalNumber = document.getElementById('decimalNumber');
   const incBtn = document.getElementById('increment');
   const decBtn = document.getElementById('decrement');
+  const resetBtn = document.getElementById('reset');
 
   let current = 0;
   let base = parseInt(baseInput.value, 10);
@@ -29,6 +30,13 @@
 
   decBtn.addEventListener('click', () => {
     current -= 1;
+    updateDisplay();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    base = 10;
+    current = 0;
+    baseInput.value = base;
     updateDisplay();
   });
 
