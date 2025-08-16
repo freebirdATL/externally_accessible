@@ -1,6 +1,6 @@
 (() => {
   const baseInput = document.getElementById('baseInput');
-  const baseLabel = document.getElementById('baseLabel');
+
   const baseNumber = document.getElementById('baseNumber');
   const decimalNumber = document.getElementById('decimalNumber');
   const incBtn = document.getElementById('increment');
@@ -10,7 +10,6 @@
   let base = parseInt(baseInput.value, 10);
 
   function updateDisplay() {
-    baseLabel.textContent = base;
     baseNumber.textContent = current.toString(base).toUpperCase();
     decimalNumber.textContent = current.toString(10);
   }

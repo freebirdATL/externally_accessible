@@ -2,4 +2,4 @@ Hello and Welcome! This repository is used for collaborating with external AI ag
 
 ## Base Number Web App
 
-Open `index.html` in a browser to experiment with numbers in different bases. Choose a base between 2 and 30, increment or decrement the value, and see both the representation in the selected base and the decimal equivalent.
+Open `index.html` in a browser to experiment with numbers in different bases. Choose a base between 2 and 30, then use the large `-` and `+` buttons beside the centered value to decrement or increment it. The base-specific value is displayed prominently with the base‑10 equivalent shown beneath it.
