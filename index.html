@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Base Number Incrementer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    .display { margin-top: 1rem; font-size: 1.2rem; }
+    button { margin: 0 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Base Number Incrementer</h1>
+  <label for="baseInput">Base (2-30):</label>
+  <input type="number" id="baseInput" min="2" max="30" value="10">
+  <div class="display">
+    Value in base <span id="baseLabel">10</span>: <span id="baseNumber">0</span>
+  </div>
+  <div class="display">
+    Base 10 value: <span id="decimalNumber">0</span>
+  </div>
+  <button id="decrement">-</button>
+  <button id="increment">+</button>
+  <script src="script.js"></script>
+</body>
+</html>
