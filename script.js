@@ -1,5 +1,6 @@
 (() => {
   const baseInput = document.getElementById('baseInput');
+
   const baseNumber = document.getElementById('baseNumber');
   const decimalNumber = document.getElementById('decimalNumber');
   const incBtn = document.getElementById('increment');
