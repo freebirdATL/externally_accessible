@@ -27,7 +27,25 @@
     }
     #baseNumber {
       font-size: 3rem;
-      min-width: 4rem;
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+    .digit {
+      width: 3rem;
+      height: 4rem;
+      border: 2px solid #000;
+      position: relative;
+      overflow: hidden;
+    }
+    .digit span {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      line-height: 4rem;
+      text-align: center;
+      transition: transform 0.3s ease;
     }
     #decimalDisplay {
       margin-top: 1rem;
@@ -44,7 +62,7 @@
   <input type="number" id="baseInput" min="2" max="30" value="10">
   <div class="controls">
     <button id="decrement">-</button>
-    <div id="baseNumber">0</div>
+    <div id="baseNumber"></div>
     <button id="increment">+</button>
   </div>
   <div id="decimalDisplay">Base 10: <span id="decimalNumber">0</span></div>
