@@ -108,18 +108,23 @@
     }
   }
 
-  incBtn.addEventListener('click', inc);
-  decBtn.addEventListener('click', dec);
-
   function autoRepeat(btn, handler) {
     let interval;
-    const clear = () => interval && clearInterval(interval);
-    btn.addEventListener('mousedown', () => {
+    const start = () => {
       handler();
       interval = setInterval(handler, 150);
-    });
+    };
+    const clear = () => interval && clearInterval(interval);
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('touchstart', start);
     ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(ev =>
       btn.addEventListener(ev, clear));
+    btn.addEventListener('keydown', e => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        handler();
+      }
+    });
   }
 
   autoRepeat(incBtn, inc);

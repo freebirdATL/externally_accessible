@@ -70,6 +70,7 @@ body {
 .base-value {
   margin-top: 0.5rem;
   font-weight: 500;
+  font-size: 1.5rem;
 }
 
 .controls {
@@ -112,8 +113,8 @@ button:focus-visible {
 }
 
 .digit {
-  width: 3rem;
-  height: 4rem;
+    width: 4rem;
+    height: 5rem;
   border: 1px solid var(--card-border);
   border-radius: 0.5rem;
   background: #fff;
@@ -123,7 +124,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
+    font-size: 3.5rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -146,9 +147,9 @@ button:focus-visible {
 }
 
 #decimalDisplay {
-  font-size: 1rem;
-  color: var(--muted);
-}
+    font-size: 1.5rem;
+    color: var(--muted);
+  }
 
 .reset {
   margin-top: 2rem;
