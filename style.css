@@ -20,7 +20,7 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   background: var(--bg);
   color: var(--text);
   margin: 0;
@@ -93,7 +93,9 @@ button {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 button:active {
@@ -113,24 +115,35 @@ button:focus-visible {
 }
 
 .digit {
-    width: 4rem;
-    height: 5rem;
+  width: 4rem;
+  height: 5rem;
   border: 1px solid var(--card-border);
-  border-radius: 0.5rem;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 0.25rem;
+  background: #111;
+  color: #fff;
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-    font-size: 3.5rem;
+  font-size: 3.5rem;
   font-variant-numeric: tabular-nums;
+  perspective: 600px;
+}
+
+.digit::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--card-border);
 }
 
 @media (prefers-color-scheme: dark) {
   .digit {
-    background: #2f2f2f;
+    background: #000;
   }
 }
 
@@ -143,13 +156,69 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s ease;
+  backface-visibility: hidden;
+}
+
+.digit .back {
+  transform: rotateX(180deg);
+}
+
+.digit.flip-up .front {
+  animation: flip-up-front 0.5s forwards;
+}
+
+.digit.flip-up .back {
+  animation: flip-up-back 0.5s forwards;
+}
+
+.digit.flip-down .front {
+  animation: flip-down-front 0.5s forwards;
+}
+
+.digit.flip-down .back {
+  animation: flip-down-back 0.5s forwards;
+}
+
+@keyframes flip-up-front {
+  from {
+    transform: rotateX(0deg);
+  }
+  to {
+    transform: rotateX(-180deg);
+  }
+}
+
+@keyframes flip-up-back {
+  from {
+    transform: rotateX(180deg);
+  }
+  to {
+    transform: rotateX(0deg);
+  }
+}
+
+@keyframes flip-down-front {
+  from {
+    transform: rotateX(0deg);
+  }
+  to {
+    transform: rotateX(180deg);
+  }
+}
+
+@keyframes flip-down-back {
+  from {
+    transform: rotateX(-180deg);
+  }
+  to {
+    transform: rotateX(0deg);
+  }
 }
 
 #decimalDisplay {
-    font-size: 1.5rem;
-    color: var(--muted);
-  }
+  font-size: 1.5rem;
+  color: var(--muted);
+}
 
 .reset {
   margin-top: 2rem;
