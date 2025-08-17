@@ -32,28 +32,31 @@
   }
 
   function animateDigit(elem, from, to, direction) {
-    elem.innerHTML = `<span class="old">${from}</span><span class="new">${to}</span>`;
-    const [oldSpan, newSpan] = elem.children;
-    if (direction === 'up') {
-      newSpan.style.transform = 'translateY(100%)';
-    } else {
-      newSpan.style.transform = 'translateY(-100%)';
-    }
-    // force reflow
-    void newSpan.offsetHeight;
-    if (direction === 'up') {
-      oldSpan.style.transform = 'translateY(-100%)';
-      newSpan.style.transform = 'translateY(0)';
-    } else {
-      oldSpan.style.transform = 'translateY(100%)';
-      newSpan.style.transform = 'translateY(0)';
-    }
-    oldSpan.addEventListener('transitionend', () => {
-      elem.textContent = to;
-    }, { once: true });
+    return new Promise(resolve => {
+      elem.innerHTML = `<span class="old">${from}</span><span class="new">${to}</span>`;
+      const [oldSpan, newSpan] = elem.children;
+      if (direction === 'up') {
+        newSpan.style.transform = 'translateY(100%)';
+      } else {
+        newSpan.style.transform = 'translateY(-100%)';
+      }
+      // force reflow
+      void newSpan.offsetHeight;
+      if (direction === 'up') {
+        oldSpan.style.transform = 'translateY(-100%)';
+        newSpan.style.transform = 'translateY(0)';
+      } else {
+        oldSpan.style.transform = 'translateY(100%)';
+        newSpan.style.transform = 'translateY(0)';
+      }
+      oldSpan.addEventListener('transitionend', () => {
+        elem.textContent = to;
+        resolve();
+      }, { once: true });
+    });
   }
 
-  function updateDigits(prev, next) {
+  async function updateDigits(prev, next) {
     const prevStr = prev.toString(base).toUpperCase();
     const nextStr = next.toString(base).toUpperCase();
     const maxLen = Math.max(prevStr.length, nextStr.length);
@@ -64,17 +67,22 @@
     const paddedNext = nextStr.padStart(maxLen, '0');
     const direction = next >= prev ? 'up' : 'down';
 
-    for (let i = 0; i < maxLen; i++) {
+    const changed = [];
+    for (let i = maxLen - 1; i >= 0; i--) {
       if (paddedPrev[i] !== paddedNext[i]) {
-        animateDigit(digits[i], paddedPrev[i], paddedNext[i], direction);
+        changed.push(i);
       } else {
         digits[i].textContent = paddedNext[i];
       }
     }
+
+    for (const i of changed) {
+      await animateDigit(digits[i], paddedPrev[i], paddedNext[i], direction);
+    }
   }
 
-  function updateDisplay() {
-    updateDigits(previous, current);
+  async function updateDisplay() {
+    await updateDigits(previous, current);
     decimalNumber.textContent = current.toString(10);
     previous = current;
   }
