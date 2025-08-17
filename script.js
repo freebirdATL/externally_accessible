@@ -1,6 +1,6 @@
 (() => {
-  const baseInput = document.getElementById('baseInput');
-
+  const baseSlider = document.getElementById('baseSlider');
+  const baseValue = document.getElementById('baseValue');
   const baseNumber = document.getElementById('baseNumber');
   const decimalNumber = document.getElementById('decimalNumber');
   const incBtn = document.getElementById('increment');
@@ -9,7 +9,7 @@
 
   let current = 0;
   let previous = 0;
-  let base = parseInt(baseInput.value, 10);
+  let base = parseInt(baseSlider.value, 10);
   const digits = [];
 
   function createDigit(value) {
@@ -40,8 +40,7 @@
       } else {
         newSpan.style.transform = 'translateY(-100%)';
       }
-      // force reflow
-      void newSpan.offsetHeight;
+      void newSpan.offsetHeight; // force reflow
       if (direction === 'up') {
         oldSpan.style.transform = 'translateY(-100%)';
         newSpan.style.transform = 'translateY(0)';
@@ -84,39 +83,63 @@
   async function updateDisplay() {
     await updateDigits(previous, current);
     decimalNumber.textContent = current.toString(10);
+    baseValue.textContent = base;
     previous = current;
   }
 
-  baseInput.addEventListener('change', () => {
-    let value = parseInt(baseInput.value, 10);
-    if (isNaN(value)) value = 10;
-    base = Math.min(30, Math.max(2, value));
-    baseInput.value = base;
+  baseSlider.addEventListener('input', () => {
+    base = parseInt(baseSlider.value, 10);
     updateDisplay();
+    baseNumber.classList.add('highlight');
+    setTimeout(() => baseNumber.classList.remove('highlight'), 300);
   });
 
-  incBtn.addEventListener('click', () => {
+  function inc() {
     previous = current;
     current += 1;
     updateDisplay();
-  });
+  }
 
-  decBtn.addEventListener('click', () => {
+  function dec() {
     if (current > 0) {
       previous = current;
       current -= 1;
       updateDisplay();
     }
-  });
+  }
+
+  incBtn.addEventListener('click', inc);
+  decBtn.addEventListener('click', dec);
+
+  function autoRepeat(btn, handler) {
+    let interval;
+    const clear = () => interval && clearInterval(interval);
+    btn.addEventListener('mousedown', () => {
+      handler();
+      interval = setInterval(handler, 150);
+    });
+    ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(ev =>
+      btn.addEventListener(ev, clear));
+  }
+
+  autoRepeat(incBtn, inc);
+  autoRepeat(decBtn, dec);
 
   resetBtn.addEventListener('click', () => {
     base = 10;
     current = 0;
     previous = 0;
-    baseInput.value = base;
+    baseSlider.value = base;
     updateDisplay();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp') {
+      inc();
+    } else if (e.key === 'ArrowDown') {
+      dec();
+    }
   });
 
   updateDisplay();
 })();
-
