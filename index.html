@@ -3,19 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <title>Base Number Incrementer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Base Number Incrementer</h1>
-  <label for="baseInput">Base (2-30):</label>
-  <input type="number" id="baseInput" min="2" max="30" value="10">
-  <div class="controls">
-    <button id="decrement">-</button>
-    <div id="baseNumber"></div>
-    <button id="increment">+</button>
-  </div>
-  <div id="decimalDisplay">Base 10: <span id="decimalNumber">0</span></div>
-  <button id="reset">Reset</button>
+  <main class="card" role="main">
+    <h1>Base Incrementer</h1>
+    <p class="subtitle">Explore numbers in different bases.</p>
+
+    <div class="base-control">
+      <label for="baseSlider">Base</label>
+      <div class="slider-wrapper">
+        <span class="min">2</span>
+        <input type="range" id="baseSlider" min="2" max="30" value="10" aria-label="select base" />
+        <span class="max">30</span>
+      </div>
+      <div id="baseValue" class="base-value" aria-live="polite">10</div>
+    </div>
+
+    <div class="controls">
+      <button id="decrement" aria-label="decrease">
+        <span aria-hidden="true">−</span>
+      </button>
+      <div id="baseNumber" class="display" aria-live="polite"></div>
+      <button id="increment" aria-label="increase">
+        <span aria-hidden="true">+</span>
+      </button>
+    </div>
+
+    <div id="decimalDisplay" aria-live="polite">Decimal: <span id="decimalNumber">0</span></div>
+
+    <button id="reset" class="reset">Reset</button>
+  </main>
   <script src="script.js"></script>
 </body>
 </html>
