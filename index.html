@@ -1,42 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Base Number Incrementer</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <main class="card" role="main">
-    <h1>Base Incrementer</h1>
-    <p class="subtitle">Explore numbers in different bases.</p>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Base Number Incrementer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="card" role="main">
+      <h1>Base Incrementer</h1>
+      <p class="subtitle">Explore numbers in different bases.</p>
 
-    <div class="base-control">
-      <label for="baseSlider">Base</label>
-      <div class="slider-wrapper">
-        <span class="min">2</span>
-        <input type="range" id="baseSlider" min="2" max="30" value="10" aria-label="select base" />
-        <span class="max">30</span>
+      <div class="bits-control">
+        <label for="bitsSlider">Bits</label>
+        <div class="slider-wrapper">
+          <span class="min">1</span>
+          <input
+            type="range"
+            id="bitsSlider"
+            min="1"
+            max="16"
+            value="8"
+            aria-label="select bits"
+          />
+          <span class="max">16</span>
+        </div>
+        <div id="bitsValue" class="bits-value" aria-live="polite">8</div>
+        <label class="dynamic-toggle">
+          <input type="checkbox" id="dynamicBits" />
+          Dynamic bits
+        </label>
       </div>
-      <div id="baseValue" class="base-value" aria-live="polite">10</div>
-    </div>
 
-    <div class="controls">
-      <button id="decrement" aria-label="decrease">
-        <span aria-hidden="true">−</span>
-      </button>
-      <div id="baseNumber" class="display" aria-live="polite"></div>
-      <button id="increment" aria-label="increase">
-        <span aria-hidden="true">+</span>
-      </button>
-    </div>
+      <div class="base-control">
+        <label for="baseSlider">Base</label>
+        <div class="slider-wrapper">
+          <span class="min">2</span>
+          <input
+            type="range"
+            id="baseSlider"
+            min="2"
+            max="30"
+            value="10"
+            aria-label="select base"
+          />
+          <span class="max">30</span>
+        </div>
+        <div id="baseValue" class="base-value" aria-live="polite">10</div>
+      </div>
 
-    <div id="decimalDisplay" aria-live="polite">Decimal: <span id="decimalNumber">0</span></div>
+      <div class="controls">
+        <button id="decrement" aria-label="decrease">
+          <span aria-hidden="true">−</span>
+        </button>
+        <div id="baseNumber" class="display" aria-live="polite"></div>
+        <button id="increment" aria-label="increase">
+          <span aria-hidden="true">+</span>
+        </button>
+      </div>
 
-    <button id="reset" class="reset">Reset</button>
-  </main>
-  <script src="script.js"></script>
-</body>
+      <div id="decimalDisplay" aria-live="polite">
+        Decimal: <span id="decimalNumber">0</span>
+      </div>
+
+      <button id="reset" class="reset">Reset</button>
+    </main>
+    <script src="script.js"></script>
+  </body>
 </html>
