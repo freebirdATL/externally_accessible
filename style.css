@@ -36,7 +36,7 @@ body {
   border-radius: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 2rem;
-  width: min(90%, 400px);
+  width: max-content;
   text-align: center;
 }
 
@@ -115,6 +115,7 @@ button:focus-visible {
 .digit {
     width: 4rem;
     height: 5rem;
+  flex: 0 0 4rem;
   border: 1px solid var(--card-border);
   border-radius: 0.5rem;
   background: #fff;
