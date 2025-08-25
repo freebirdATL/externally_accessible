@@ -96,6 +96,13 @@ button {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+#render {
+  width: auto;
+  height: auto;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+}
+
 button:active {
   transform: scale(0.95);
 }
