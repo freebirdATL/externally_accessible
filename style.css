@@ -180,3 +180,40 @@ button:focus-visible {
     width: 100%;
   }
 }
+
+.display-controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.display-controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+#bitmap {
+  width: 100%;
+  min-height: 6rem;
+  margin-top: 1rem;
+  font-family: monospace;
+}
+
+#error {
+  color: var(--accent);
+  margin-top: 0.5rem;
+}
+
+#grid {
+  display: grid;
+  margin-top: 1rem;
+  border: 1px solid var(--card-border);
+}
+
+.pixel {
+  box-sizing: border-box;
+  border: 1px solid var(--card-border);
+}

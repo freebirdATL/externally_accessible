@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Binary Display Tester</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card" role="main">
+    <h1>Binary Display</h1>
+    <div class="display-controls">
+      <label>Width <input type="number" id="width" min="1" max="256" value="8"></label>
+      <label>Height <input type="number" id="height" min="1" max="256" value="8"></label>
+      <label>Mode
+        <select id="mode">
+          <option value="bw">1-bit B/W</option>
+          <option value="rgb">24-bit RGB</option>
+        </select>
+      </label>
+      <button id="render">Render</button>
+    </div>
+    <textarea id="bitmap" placeholder="Paste your bitmap using 0s and 1s (RGB mode uses 24 bits per pixel)"></textarea>
+    <div id="error" class="error" aria-live="polite"></div>
+    <div id="grid"></div>
+  </main>
+  <script src="display.js"></script>
+</body>
+</html>
