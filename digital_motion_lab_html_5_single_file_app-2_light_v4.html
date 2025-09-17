@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Digital Motion Lab (Constant Acceleration)</title>
+  <style>
+  :root{
+    --bg:#ffffff;
+    --panel:#ffffff;
+    --ink:#0b1220;
+    --muted:#64748b;
+    --accent:#2563eb;   /* traces: blue */
+    --accent2:#10b981;  /* traces: green */
+    --warn:#b45309;
+    --line:#e5e7eb;
+    --line-soft:#eef2f7;
+    --header-h:64px;
+    --graph-h:0px;
+    --shadow:0 10px 30px rgba(2,6,23,.08), 0 2px 8px rgba(2,6,23,.06);
+  }
+  *{box-sizing:border-box;font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
+  html, body{height:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+  }
+
+  /* Header */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 18px;
+    border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.8);
+    backdrop-filter: blur(6px);
+  }
+  h1{margin:0;font-size:18px;letter-spacing:.3px;color:var(--ink)}
+
+  /* Buttons */
+  .ghost{
+    background:#f8fafc;border:1px solid var(--line);color:var(--ink);
+    padding:8px 10px;border-radius:12px;cursor:pointer;
+  }
+  .ghost:hover{border-color:#cbd5e1}
+  .primary{
+    background:linear-gradient(180deg,#2563eb,#1d4ed8);
+    border-color:#1d4ed8;color:#fff;
+  }
+
+  /* Layout */
+  .wrap{
+    display:grid;grid-template-columns:360px 1fr;gap:12px;padding:10px;
+    height:calc(100vh - var(--header-h));
+  }
+  .wrap.is-collapsed{grid-template-columns:1fr}
+  .wrap.is-collapsed .panel{display:none}
+
+  /* Panel */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    padding:12px;overflow:auto;
+  }
+  .panel h2{
+    font-size:13px;margin:0 0 8px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.12em
+  }
+  .controls{display:grid;gap:10px}
+  .row{display:grid;grid-template-columns:1fr 96px;gap:8px;align-items:center}
+  label{font-size:12px;color:var(--muted)}
+  .val{font-variant-numeric:tabular-nums;color:#334155}
+  input[type=range]{width:100%}
+  input[type=number]{
+    width:96px;background:#fff;border:1px solid var(--line);color:var(--ink);
+    padding:6px 8px;border-radius:10px
+  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+  button{
+    background:#f8fafc;border:1px solid var(--line);color:var(--ink);
+    padding:8px 10px;border-radius:12px;cursor:pointer
+  }
+  button:hover{border-color:#cbd5e1}
+  button.primary{color:#fff}
+  .toggle{display:flex;gap:10px;align-items:center}
+  .sep{height:1px;background:var(--line);margin:8px 0}
+
+  /* Stage */
+  .stage{display:grid;grid-template-rows:1fr auto var(--graph-h);gap:8px;min-height:0}
+  .canwrap{
+    position:relative;background:#ffffff;border:1px solid var(--line);
+    border-radius:16px;overflow:hidden;min-height:0
+  }
+  canvas{display:block;width:100%;height:100%}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
+  .badge{display:inline-flex;gap:6px;align-items:center}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .dot.path{background:var(--accent)}
+  .dot.samp{background:var(--accent2)}
+  .dot.vel{background:#ef4444}
+  .dot.pos{background:#f59e0b}
+
+  .graphs{display:grid;grid-template-columns:1fr 1fr;gap:8px;height:100%}
+  .graph{
+    background:#ffffff;border:1px solid var(--line);
+    border-radius:16px;padding:6px;min-height:0
+  }
+  .graph canvas{cursor:crosshair}
+  .note{font-size:12px;color:var(--muted)}
+
+  .status{
+    margin-left:auto;padding:2px 8px;border-radius:10px;border:1px solid #cbd5e1;color:#0b1220
+  }
+  .status.pass{color:#166534;border-color:#bbf7d0;background:#f0fdf4}
+  .status.fail{color:#991b1b;border-color:#fecaca;background:#fef2f2}
+
+  .toolbar{display:flex;align-items:center;gap:8px}
+  .toolbar .pill{
+    padding:6px 10px;border-radius:999px;border:1px solid var(--line);
+    background:#f8fafc;color:#0b1220
+  }
+</style>
+</head>
+<body>
+<header id="appHeader">
+  <h1>Digital Motion Lab — Constant Acceleration (Exact Kinematics)</h1>
+  <div class="toolbar">
+    <button id="startTop" class="pill">Start</button>
+    <button id="pauseTop" class="pill">Pause</button>
+    <span id="selftest" class="status">Self‑test: running…</span>
+    <button id="togglePanel" class="ghost" title="Hide/Show Controls">Hide Controls</button>
+  </div>
+</header>
+<div class="wrap" id="wrap">
+  <section class="panel">
+    <h2>Controls</h2>
+    <div class="controls">
+      <div class="row"><label>Initial Speed (m/s): <span id="v0Val" class="val"></span><br><input id="v0" type="range" min="0" max="60" step="0.1" value="20"></label><input id="v0Num" type="number" min="0" max="60" step="0.1" value="20"></div>
+      <div class="row"><label>Launch Angle (° from +x): <span id="angVal" class="val"></span><br><input id="angle" type="range" min="0" max="360" step="0.5" value="45"></label><input id="angleNum" type="number" min="0" max="360" step="0.5" value="45"></div>
+      <div class="sep"></div>
+      <div class="row"><label>Acceleration Magnitude (m/s²): <span id="aMagVal" class="val"></span><br><input id="aMag" type="range" min="0" max="30" step="0.1" value="9.8"></label><input id="aMagNum" type="number" min="0" max="30" step="0.1" value="9.8"></div>
+      <div class="row"><label>Acceleration Angle (° from +x): <span id="aAngVal" class="val"></span><br><input id="aAngle" type="range" min="0" max="360" step="0.5" value="270"></label><input id="aAngleNum" type="number" min="0" max="360" step="0.5" value="270"></div>
+      <div class="grid2">
+        <div class="row"><label>Pixel Scale (px per meter): <span id="scaleVal" class="val"></span><br><input id="scale" type="range" min="10" max="120" step="1" value="35"></label><input id="scaleNum" type="number" min="10" max="120" step="1" value="35"></div>
+        <div class="row"><label>Time Speed (× real‑time): <span id="speedVal" class="val"></span><br><input id="timeSpeed" type="range" min="0.1" max="4" step="0.1" value="1"></label><input id="timeSpeedNum" type="number" min="0.1" max="4" step="0.1" value="1"></div>
+      </div>
+      <div class="sep"></div>
+      <div class="grid2">
+        <div class="row"><label>Dot Graph: sample every (s) <span id="dotDtVal" class="val"></span><br><input id="dotDt" type="range" min="0.1" max="2" step="0.1" value="0.5"></label><input id="dotDtNum" type="number" min="0.1" max="2" step="0.1" value="0.5"></div>
+        <div class="toggle"><input id="dotToggle" type="checkbox" checked><label for="dotToggle">Show Dot Graph</label></div>
+      </div>
+      <div class="grid2">
+        <div class="toggle"><input id="posGraphToggle" type="checkbox"><label for="posGraphToggle">Show Position–Time Graph</label></div>
+        <div class="toggle"><input id="velGraphToggle" type="checkbox"><label for="velGraphToggle">Show Velocity–Time Graph</label></div>
+      </div>
+      
+      <div class="grid2">
+        <div class="row"><label>Start X (m): <span class="val" id="x0Val">0</span></label><input id="x0" type="number" step="0.1" value="0"></div>
+        <div class="row"><label>Start Y (m): <span class="val" id="y0Val">0</span></label><input id="y0" type="number" step="0.1" value="0"></div>
+      </div>
+
+      
+      <div class="sep"></div>
+      <h2>Auto‑Stop</h2>
+      <div class="grid2">
+        <div class="toggle">
+          <input id="stopEnable" type="checkbox">
+          <label for="stopEnable">Enable Auto‑Stop</label>
+        </div>
+        <div class="row">
+          <label>When</label>
+          <select id="stopMetric">
+            <option value="t">time t (s)</option>
+            <option value="x">x (m)</option>
+            <option value="y">y (m)</option>
+            <option value="speed">|v| (m/s)</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <label>Threshold value</label>
+        <input id="stopValue" type="number" step="0.1" value="0">
+      </div>
+
+      <div class="btns">
+        <button id="start" class="primary">Start</button>
+        <button id="pause">Pause</button>
+        <button id="reset">Reset</button>
+        <button id="zeroY">Set ground at y=0</button>
+        <span class="note">Kinematics: x(t)=x₀+v₀ₓt+½aₓt², y(t)=y₀+v₀ᵧt+½aᵧt² (exact under constant a)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="stage">
+    <div class="canwrap"><canvas id="scene" aria-label="simulation canvas"></canvas></div>
+    <div class="legend">
+      <span class="badge"><span class="dot path"></span>Trajectory</span>
+      <span class="badge"><span class="dot samp"></span>Dot samples</span><span class="note" id="readout"></span>
+    </div>
+    <div class="graphs" id="graphs" hidden>
+      <div class="graph"><canvas id="posGraph"></canvas></div>
+      <div class="graph"><canvas id="velGraph"></canvas></div>
+    </div>
+  </section>
+</div>
+
+<script>
+// Interactive constant-acceleration lab with responsive, no-scroll layout.
+(function(){
+  const MARGIN = 40;
+  const $ = id => document.getElementById(id);
+  const header = $("appHeader");
+  const wrap = $("wrap");
+  const scene = $("scene"), sctx = scene.getContext("2d");
+  const hoverScene = {active:false, x:0, y:0};
+  const posCanvas = $("posGraph"), posG = posCanvas.getContext("2d");
+  const velCanvas = $("velGraph"), velG = velCanvas.getContext("2d");
+
+  const controls = {
+    v0: $("v0"), v0Num: $("v0Num"), angle: $("angle"), angleNum: $("angleNum"), x0: $("x0"), y0: $("y0"), stopEnable: $("stopEnable"), stopMetric: $("stopMetric"), stopValue: $("stopValue"),
+    aMag: $("aMag"), aMagNum: $("aMagNum"), aAngle: $("aAngle"), aAngleNum: $("aAngleNum"),
+    scale: $("scale"), scaleNum: $("scaleNum"), timeSpeed: $("timeSpeed"), timeSpeedNum: $("timeSpeedNum"),
+    dotDt: $("dotDt"), dotDtNum: $("dotDtNum"),
+    dotToggle: $("dotToggle"), posGraphToggle: $("posGraphToggle"), velGraphToggle: $("velGraphToggle"),
+    start: $("start"), pause: $("pause"), reset: $("reset"), zeroY: $("zeroY"),
+    startTop: $("startTop"), pauseTop: $("pauseTop")
+  };
+  const labels = {
+    v0Val: $("v0Val"), angVal: $("angVal"), aMagVal: $("aMagVal"), aAngVal: $("aAngVal"), x0Val: $("x0Val"), y0Val: $("y0Val"),
+    scaleVal: $("scaleVal"), speedVal: $("speedVal"), dotDtVal: $("dotDtVal"),
+    readout: $("readout"), graphsWrap: $("graphs"), selftest: $("selftest")
+  };
+
+  // Hide/show controls
+  $("togglePanel").addEventListener('click', ()=>{
+    wrap.classList.toggle('is-collapsed');
+    const btn = $("togglePanel");
+    btn.textContent = wrap.classList.contains('is-collapsed') ? 'Show Controls' : 'Hide Controls';
+    fitLayout();
+  });
+
+  // Link each range with its number box.
+  function bindPair(range, number){
+    const r = controls[range], n = controls[number];
+    r.addEventListener('input', ()=>{ n.value = r.value; updateLabels(); drawAll(); });
+    n.addEventListener('input', ()=>{ r.value = n.value; updateLabels(); drawAll(); });
+  }
+  [
+    ['v0','v0Num'], ['angle','angleNum'], ['aMag','aMagNum'], ['aAngle','aAngleNum'],
+    ['scale','scaleNum'], ['timeSpeed','timeSpeedNum'], ['dotDt','dotDtNum']
+  ].forEach(([r,n])=>bindPair(r,n));
+
+  function updateLabels(){
+    labels.v0Val.textContent = controls.v0.value + " m/s";
+    labels.angVal.textContent = controls.angle.value + "°";
+    labels.aMagVal.textContent = controls.aMag.value + " m/s²";
+    labels.aAngVal.textContent = controls.aAngle.value + "°";
+    labels.scaleVal.textContent = controls.scale.value + " px/m";
+    labels.speedVal.textContent = controls.timeSpeed.value + "×";
+    labels.dotDtVal.textContent = Number(controls.dotDt.value).toFixed(1) + " s";
+  }
+  updateLabels();
+
+  // Simulation state
+  let running=false, lastStamp=0, simT=0;
+  let x0=0, y0=0; // meters
+  const stopCfg = { enabled:false, metric:"t", value:0, left:false };
+  let trace=[]; // dense time series for graphs & trajectory {t,x,y,vx,vy}
+  let dots=[];  // sparse samples for dot diagram {t,x,y}
+  let lastDot=0;
+
+  // Hover state for graphs
+  const hover = { pos:{active:false,x:0}, vel:{active:false,x:0} };
+  function attachHover(canvas, key){
+    canvas.addEventListener('mousemove', e=>{ hover[key].active=true; hover[key].x = e.offsetX; drawGraphs(); });
+    canvas.addEventListener('mouseleave', ()=>{ hover[key].active=false; drawGraphs(); });
+  }
+  attachHover(posCanvas,'pos'); attachHover(velCanvas,'vel');
+
+  function vec(mag, deg){ const r=deg*Math.PI/180; return {x:mag*Math.cos(r), y:mag*Math.sin(r)}; }
+  
+  function stopEpsilon(metric){
+    if(metric==="t") return 0.0001;
+    if(metric==="speed") return 0.02;
+    return 0.02; // meters for x or y
+  }
+  function currentMetricValue(metric, st, t){
+    if(metric==="t") return t;
+    if(metric==="x") return st.x;
+    if(metric==="y") return st.y;
+    if(metric==="speed") return Math.hypot(st.vx, st.vy);
+    return NaN;
+  }
+  function updateStopCfgFromUI(){
+    stopCfg.enabled = !!controls.stopEnable.checked;
+    stopCfg.metric  = controls.stopMetric.value;
+    stopCfg.value   = Number(controls.stopValue.value) || 0;
+  }
+  function resetStopLeftFlag(){
+    // Determine if we start "on" the threshold; for x/y/speed enforce leave-then-return rule.
+    const st0 = kin(0);
+    const eps = stopEpsilon(stopCfg.metric);
+    const v0  = currentMetricValue(stopCfg.metric, st0, 0);
+    const onStart = Math.abs(v0 - stopCfg.value) <= eps;
+    // For time (monotonic), we allow immediate stop when t >= value irrespective of start equality
+    if(stopCfg.metric === "t") stopCfg.left = true;
+    else stopCfg.left = !onStart;
+  }
+  function shouldAutoStop(t){
+    if(!stopCfg.enabled) return false;
+    const st = kin(t);
+    const v  = currentMetricValue(stopCfg.metric, st, t);
+    const eps = stopEpsilon(stopCfg.metric);
+    if(stopCfg.metric === "t"){
+      return t >= stopCfg.value;
+    } else {
+      const onVal = Math.abs(v - stopCfg.value) <= eps;
+      // Update left flag once we've moved away
+      if(!stopCfg.left && Math.abs(v - stopCfg.value) > eps) stopCfg.left = true;
+      return stopCfg.left && onVal;
+    }
+  }
+
+  function params(){
+    const v = vec(Number(controls.v0.value), Number(controls.angle.value));
+    const a = vec(Number(controls.aMag.value), Number(controls.aAngle.value));
+    return {v0x:v.x, v0y:v.y, ax:a.x, ay:a.y};
+  }
+  function kin(t){ const {v0x,v0y,ax,ay}=params(); return {
+    x: x0 + v0x*t + 0.5*ax*t*t,
+    y: y0 + v0y*t + 0.5*ay*t*t,
+    vx: v0x + ax*t, vy: v0y + ay*t
+  };}
+
+  // px conversion
+  function m2p(xm, ym){
+    const s = Number(controls.scale.value);
+    const H = scene.clientHeight; // CSS pixels
+    const xpx = MARGIN + xm * s;
+    const ypx = H - MARGIN - ym * s;
+    return [xpx, ypx];
+  }
+
+  // Layout fitting: ensure no page scroll; keep canvases' drawing buffers in sync with CSS size
+  function resizeCanvasToDisplaySize(c){
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.floor(c.clientWidth * dpr);
+    const h = Math.floor(c.clientHeight * dpr);
+    if(c.width!==w || c.height!==h){ c.width=w; c.height=h; return true; }
+    return false;
+  }
+  function fitLayout(){
+    // header height -> CSS var
+    const hh = header.offsetHeight; document.documentElement.style.setProperty('--header-h', hh + 'px');
+    // graphs row height depends on visibility
+    const graphsOn = !labels.graphsWrap.hidden; document.documentElement.style.setProperty('--graph-h', graphsOn ? '240px' : '0px');
+    // sync canvas internal sizes
+    const r1 = resizeCanvasToDisplaySize(scene);
+    const r2 = resizeCanvasToDisplaySize(posCanvas);
+    const r3 = resizeCanvasToDisplaySize(velCanvas);
+    if(r1 || r2 || r3) drawAll();
+  }
+  window.addEventListener('resize', fitLayout);
+
+  function reset(hard=false){
+    running=false; simT=0; lastStamp=performance.now(); trace=[]; dots=[]; lastDot=0;
+    if(hard){x0=0;y0=0; updateStopCfgFromUI(); resetStopLeftFlag(); } pushTrace(0); drawAll();
+  }
+  function pushTrace(t){ const st=kin(t); trace.push({t, ...st}); }
+  function maybeDot(t){ const d = Number(controls.dotDt.value); if(t - lastDot >= d - 1e-9){ const st=kin(t); dots.push({t, x:st.x, y:st.y}); lastDot=t; } }
+
+  function drawGrid(){
+    const ctx = sctx; const dpr = window.devicePixelRatio || 1;
+    const s = Number(controls.scale.value);
+    const W = scene.clientWidth;   // CSS pixels
+    const H = scene.clientHeight;  // CSS pixels
+
+    // Reset transform, clear in device pixels, then draw in CSS pixel space
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,scene.width,scene.height);
+    ctx.scale(dpr, dpr);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0,0,W,H);
+
+    // grid lines
+    ctx.strokeStyle = "#e9edf5"; ctx.lineWidth = 1; ctx.globalAlpha = .25;
+    for(let xm=0; MARGIN + xm*s < W-10; xm+=1){
+      const x = MARGIN + xm*s; ctx.beginPath(); ctx.moveTo(x, MARGIN); ctx.lineTo(x, H - MARGIN); ctx.stroke();
+    }
+    for(let ym=0; H - (MARGIN + ym*s) > 10; ym+=1){
+      const y = H - (MARGIN + ym*s); ctx.beginPath(); ctx.moveTo(MARGIN, y); ctx.lineTo(W-20, y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // axes
+    ctx.strokeStyle = "#334155"; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(MARGIN, H - MARGIN); ctx.lineTo(W-20, H - MARGIN);
+    ctx.moveTo(MARGIN, H - MARGIN); ctx.lineTo(MARGIN, MARGIN);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawScene(){
+    drawGrid();
+    const ctx = sctx; const dpr = window.devicePixelRatio || 1;
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr, dpr);
+
+    // Trajectory from trace
+    ctx.strokeStyle = "#2563eb"; ctx.lineWidth = 2; ctx.beginPath();
+    trace.forEach((d,i)=>{ const [x,y]=m2p(d.x,d.y); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+    ctx.stroke();
+
+    // Dot diagram
+    if(controls.dotToggle.checked){
+      ctx.fillStyle="#10b981";
+      dots.forEach(pt=>{ const [x,y]=m2p(pt.x,pt.y); ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); });
+    }
+    // Hover tooltip over trajectory
+    if(hoverScene.active){
+      const dpr = window.devicePixelRatio || 1;
+      const W = scene.clientWidth, H = scene.clientHeight;
+      const px = hoverScene.x, py = hoverScene.y;
+      const thresh = 8; // pixels proximity to show data
+      const {ax, ay, v0x, v0y} = (function(){ const o=params(); return {ax:o.ax, ay:o.ay, v0x:o.v0x, v0y:o.v0y}; })();
+
+      const hits = [];
+      for(let i=0;i<trace.length;i++){
+        const d = trace[i];
+        const mp = m2p(d.x, d.y);
+        const dx = mp[0]-px, dy = mp[1]-py;
+        const dist = Math.hypot(dx,dy);
+        if(dist <= thresh){
+          hits.push({ t:d.t, x:d.x, y:d.y, vx:d.vx, vy:d.vy, ax, ay });
+        }
+      }
+      hits.sort((a,b)=>a.t-b.t);
+      const grouped = [];
+      for(const h of hits){
+        if(grouped.length===0 || Math.abs(grouped[grouped.length-1].t - h.t) > 0.08){
+          grouped.push(h);
+        }
+      }
+      if(grouped.length>0){
+        const g = sctx; g.save(); g.setTransform(1,0,0,1,0,0); g.scale(dpr,dpr);
+        g.font = "12px ui-sans-serif";
+        const pad=8, lh=16;
+        const lines=[];
+        grouped.forEach((h, idx)=>{
+          lines.push(`t=${h.t.toFixed(2)} s`);
+          lines.push(`x=${h.x.toFixed(2)} m, y=${h.y.toFixed(2)} m`);
+          lines.push(`vx=${h.vx.toFixed(2)} m/s, vy=${h.vy.toFixed(2)} m/s`);
+          lines.push(`ax=${h.ax.toFixed(2)} m/s², ay=${h.ay.toFixed(2)} m/s²`);
+          if(idx!==grouped.length-1) lines.push('');
+        });
+        let bw=0; lines.forEach(s=>{ bw=Math.max(bw, g.measureText(s).width); });
+        bw += pad*2; const bh = lh*lines.length + pad*1.5;
+        let bx = px + 12, by = py - bh - 12;
+        if(bx + bw > W-10) bx = px - bw - 12;
+        if(by < 10) by = py + 12;
+        g.fillStyle="rgba(255,255,255,0.96)"; g.fillRect(bx,by,bw,bh);
+        g.strokeStyle="#60a5fa"; g.strokeRect(bx+.5,by+.5,bw-1,bh-1);
+        g.fillStyle="#0b1220";
+        lines.forEach((s,i)=> g.fillText(s, bx+pad, by+pad + i*lh));
+        g.restore();
+      }
+    }
+
+    // Current state marker only (vectors removed)
+    const st = kin(simT); const [cx,cy] = m2p(st.x, st.y);
+    ctx.fillStyle = "#1d4ed8"; ctx.beginPath(); ctx.arc(cx,cy,6,0,Math.PI*2); ctx.fill();
+
+    ctx.restore();
+
+    const {ax,ay} = params();
+    labels.readout.textContent = `t=${simT.toFixed(2)} s  |  pos=(${st.x.toFixed(2)}, ${st.y.toFixed(2)}) m  |  v=(${st.vx.toFixed(2)}, ${st.vy.toFixed(2)}) m/s  |  a=(${ax.toFixed(2)}, ${ay.toFixed(2)}) m/s²`;
+  }
+
+  function drawGraphs(){
+    const showPos = controls.posGraphToggle.checked;
+    const showVel = controls.velGraphToggle.checked;
+    labels.graphsWrap.hidden = !(showPos || showVel);
+    document.documentElement.style.setProperty('--graph-h', (showPos||showVel) ? '240px' : '0px');
+
+    // resize graph canvases to container
+    resizeCanvasToDisplaySize(posCanvas); resizeCanvasToDisplaySize(velCanvas);
+
+    if(showPos) plotXY(posG, posCanvas, trace, d=>d.x, d=>d.y, "Position (m)", hover.pos); else posG.clearRect(0,0,posCanvas.width,posCanvas.height);
+    if(showVel) plotXY(velG, velCanvas, trace, d=>d.vx, d=>d.vy, "Velocity (m/s)", hover.vel); else velG.clearRect(0,0,velCanvas.width,velCanvas.height);
+  }
+
+  function nearestIndex(data, t){
+    if(data.length===0) return -1; if(data.length===1) return 0;
+    let lo=0, hi=data.length-1; if(t<=data[lo].t) return lo; if(t>=data[hi].t) return hi;
+    while(hi-lo>1){ const mid=(lo+hi)>>1; if(data[mid].t < t) lo=mid; else hi=mid; }
+    return (t - data[lo].t < data[hi].t - t) ? lo : hi;
+  }
+
+  function plotXY(g, canvas, data, fx, fy, title, hoverState){
+    const dpr = window.devicePixelRatio||1; const W=canvas.clientWidth, H=canvas.clientHeight;
+    g.save(); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,canvas.width,canvas.height); g.scale(dpr,dpr);
+    g.fillStyle="#ffffff"; g.fillRect(0,0,W,H); g.strokeStyle="#e5e7eb"; g.strokeRect(0.5,0.5,W-1,H-1);
+
+    const lm=40, rm=10, tm=18, bm=24;
+    const tmin = 0, tmax = Math.max(simT, 0.001);
+    const xs = x => lm + (x - tmin)/(tmax - tmin) * (W-lm-rm);
+    const xInv = X => tmin + (X - lm)/(W-lm-rm) * (tmax - tmin);
+
+    const arrX = data.map(fx), arrY = data.map(fy);
+    const minQ = Math.min(...arrX, ...arrY), maxQ = Math.max(...arrX, ...arrY);
+    const span = (maxQ - minQ) || 1;
+    const y0 = minQ - 0.1*span, y1 = maxQ + 0.1*span;
+    const ys = y => H-bm - (y - y0)/(y1 - y0) * (H - tm - bm);
+
+    // grid
+    g.strokeStyle="#eef2f7"; g.lineWidth=1; g.globalAlpha=.25;
+    for(let i=0;i<=5;i++){
+      const xt=lm + i*(W-lm-rm)/5; g.beginPath(); g.moveTo(xt,tm); g.lineTo(xt,H-bm); g.stroke();
+      const yt=tm + i*(H-tm-bm)/5; g.beginPath(); g.moveTo(lm,yt); g.lineTo(W-rm,yt); g.stroke();
+    }
+    g.globalAlpha=1;
+
+    // axes
+    g.strokeStyle="#334155"; g.lineWidth=1.5; g.beginPath();
+    g.moveTo(lm,tm); g.lineTo(lm,H-bm); g.moveTo(lm,H-bm); g.lineTo(W-rm,H-bm); g.stroke();
+
+    // title
+    g.fillStyle="#64748b"; g.font="12px ui-sans-serif"; g.fillText(`${title} vs time`, lm+6, tm-2);
+
+    // traces
+    if(data.length>=2){
+      g.strokeStyle="#2563eb"; g.lineWidth=2; g.beginPath(); data.forEach((d,i)=>{ const X=xs(d.t), Y=ys(fx(d)); if(i===0) g.moveTo(X,Y); else g.lineTo(X,Y);}); g.stroke();
+      g.strokeStyle="#10b981"; g.beginPath(); data.forEach((d,i)=>{ const X=xs(d.t), Y=ys(fy(d)); if(i===0) g.moveTo(X,Y); else g.lineTo(X,Y);}); g.stroke();
+    }
+    // points
+    g.fillStyle="#2563eb"; data.forEach(d=>{ const X=xs(d.t), Y=ys(fx(d)); g.beginPath(); g.arc(X,Y,2,0,Math.PI*2); g.fill(); });
+    g.fillStyle="#10b981"; data.forEach(d=>{ const X=xs(d.t), Y=ys(fy(d)); g.beginPath(); g.arc(X,Y,2,0,Math.PI*2); g.fill(); });
+
+    // hover overlay
+    if(hoverState && hoverState.active && data.length){
+      const X = hoverState.x; if(X>=lm && X<=W-rm){
+        const t = xInv(X);
+        const idx = nearestIndex(data, t);
+        const d = data[idx];
+        const px = xs(d.t);
+        const py1 = ys(fx(d)), py2 = ys(fy(d));
+        // vertical guide
+        g.strokeStyle = "#60a5fa"; g.lineWidth=1; g.setLineDash([4,4]); g.beginPath(); g.moveTo(px, tm); g.lineTo(px, H-bm); g.stroke(); g.setLineDash([]);
+        // markers
+        g.fillStyle = "#2563eb"; g.beginPath(); g.arc(px, py1, 3, 0, Math.PI*2); g.fill();
+        g.fillStyle = "#10b981"; g.beginPath(); g.arc(px, py2, 3, 0, Math.PI*2); g.fill();
+        // tooltip
+        const txt1 = `${title.startsWith('Position')?'x':'vₓ'}=${(fx(d)).toFixed(2)}`;
+        const txt2 = `${title.startsWith('Position')?'y':'vᵧ'}=${(fy(d)).toFixed(2)}`;
+        const txtT = `t=${d.t.toFixed(2)}s`;
+        const lines = [txtT, txt1, txt2];
+        g.font = "12px ui-sans-serif"; g.textBaseline = "top"; g.textAlign = "left";
+        const pad=6; const lh=16; const boxW = Math.max(...lines.map(s=>g.measureText(s).width)) + pad*2; const boxH = lh*lines.length + pad*1.5;
+        let bx = px + 10, by = Math.min(py1,py2) - boxH - 8; if(bx+boxW > W-rm) bx = px - boxW - 10; if(by < tm) by = Math.max(py1,py2) + 8;
+        g.fillStyle = "rgba(255,255,255,0.96)"; g.fillRect(bx, by, boxW, boxH);
+        g.strokeStyle = "#60a5fa"; g.strokeRect(bx+0.5, by+0.5, boxW-1, boxH-1);
+        g.fillStyle = "#0b1220"; lines.forEach((s,i)=> g.fillText(s, bx+pad, by+pad + i*lh));
+      }
+    }
+
+    // time ticks
+    g.fillStyle="#64748b"; g.font = "11px ui-sans-serif";
+    for(let i=0;i<=5;i++){ const tt=tmin + i*(tmax-tmin)/5; const xt=xs(tt); g.fillText(tt.toFixed(1)+"s", xt-10, H-6); }
+
+    g.restore();
+  }
+
+  function drawAll(){ drawScene(); drawGraphs(); }
+
+  function startSim(){ if(!running){ running=true; lastStamp=performance.now(); drawAll(); requestAnimationFrame(step);} }
+  function pauseSim(){ running=false; }
+
+  function step(now){
+    if(!running) return;
+    const dt=(now-lastStamp)/1000; lastStamp=now; const speed=Number(controls.timeSpeed.value);
+    simT += dt*speed; pushTrace(simT); maybeDot(simT);
+    if(shouldAutoStop(simT)){ running=false; drawAll(); return; }
+    drawAll(); requestAnimationFrame(step);
+  }
+
+  // UI events (both header and panel controls)
+  controls.start.addEventListener('click', startSim);
+  controls.pause.addEventListener('click', pauseSim);
+  controls.startTop.addEventListener('click', startSim);
+  controls.pauseTop.addEventListener('click', pauseSim);
+
+  controls.reset.addEventListener('click', ()=>{ reset(false); fitLayout(); });
+  controls.zeroY.addEventListener('click', ()=>{ y0=0; reset(false); fitLayout(); });
+  controls.posGraphToggle.addEventListener('change', ()=>{ drawGraphs(); fitLayout(); });
+  controls.velGraphToggle.addEventListener('change', ()=>{ drawGraphs(); fitLayout(); });
+  controls.dotToggle.addEventListener('change', drawAll);
+
+  // Auto‑Stop bindings
+  controls.stopEnable.addEventListener('change', ()=>{ updateStopCfgFromUI(); resetStopLeftFlag(); });
+  controls.stopMetric.addEventListener('change', ()=>{ updateStopCfgFromUI(); resetStopLeftFlag(); });
+  controls.stopValue.addEventListener('input', ()=>{ updateStopCfgFromUI(); resetStopLeftFlag(); });
+
+
+  // Hover on main scene: capture mouse and redraw
+  scene.addEventListener('mousemove', (e)=>{ hoverScene.active = true; hoverScene.x = e.offsetX; hoverScene.y = e.offsetY; drawAll(); });
+  scene.addEventListener('mouseleave', ()=>{ hoverScene.active = false; drawAll(); });
+
+  controls.x0.addEventListener('input', ()=>{ x0 = Number(controls.x0.value)||0; labels.x0Val.textContent = x0.toFixed(1); reset(false); fitLayout(); });
+  controls.y0.addEventListener('input', ()=>{ y0 = Number(controls.y0.value)||0; labels.y0Val.textContent = y0.toFixed(1); reset(false); fitLayout(); });
+
+
+  controls.x0.addEventListener('input', ()=>{ x0 = Number(controls.x0.value)||0; labels.x0Val.textContent = x0.toFixed(1); reset(false); fitLayout(); });
+  controls.y0.addEventListener('input', ()=>{ y0 = Number(controls.y0.value)||0; labels.y0Val.textContent = y0.toFixed(1); reset(false); fitLayout(); });
+
+
+  // ---------- Self-tests (non‑intrusive) ----------
+  function approx(a,b,eps=1e-9){ return Math.abs(a-b) <= eps*(1+Math.max(1,Math.abs(a),Math.abs(b))); }
+  function runSelfTests(){
+    const results = [];
+    // Test 1: t=0 returns initial state
+    (function(){
+      const x0=1.2,y0=3.4,v0x=2.0,v0y=-1.0,ax=0.5,ay=-9.8,t=0;
+      const x = x0 + v0x*t + 0.5*ax*t*t;
+      const y = y0 + v0y*t + 0.5*ay*t*t;
+      const vx = v0x + ax*t, vy = v0y + ay*t;
+      results.push( approx(x,1.2) && approx(y,3.4) && approx(vx,2.0) && approx(vy,-1.0) );
+    })();
+    // Test 2: Known numbers
+    (function(){
+      const v0x=3,v0y=4,ax=1,ay=-2,t=5,x0=0,y0=0;
+      const x= x0 + v0x*t + 0.5*ax*t*t; // 27.5
+      const y= y0 + v0y*t + 0.5*ay*t*t; // -5
+      const vx= v0x + ax*t;            // 8
+      const vy= v0y + ay*t;            // -6
+      results.push( approx(x,27.5) && approx(y,-5) && approx(vx,8) && approx(vy,-6) );
+    })();
+    // Test 3: Velocity is linear in time (constant acceleration)
+    (function(){
+      const v0x=1, v0y=2, ax=0.3, ay=-0.4, t=4;
+      const vx = v0x + ax*t; // 2.2
+      const vy = v0y + ay*t; // 0.4
+      results.push( approx(vx,2.2) && approx(vy,0.4) );
+    })();
+    // Test 4: Zero-acceleration -> constant velocity, linear position
+    (function(){
+      const v0x=5, v0y=-2, ax=0, ay=0, t=7, x0=0, y0=0;
+      const x= x0 + v0x*t + 0.5*ax*t*t; // 35
+      const y= y0 + v0y*t + 0.5*ay*t*t; // -14
+      const vx= v0x + ax*t;            // 5
+      const vy= v0y + ay*t;            // -2
+      results.push( approx(x,35) && approx(y,-14) && approx(vx,5) && approx(vy,-2) );
+    })();
+
+    const ok = results.every(Boolean);
+    labels.selftest.textContent = ok ? 'Self‑test: passed' : 'Self‑test: FAILED';
+    labels.selftest.classList.toggle('pass', ok);
+    labels.selftest.classList.toggle('fail', !ok);
+    if(!ok) console.error('Self‑tests failed: ', results);
+  }
+
+  // Kickoff
+  function init(){ fitLayout(); reset(true); fitLayout(); runSelfTests(); }
+  window.addEventListener('load', init);
+})();
+</script>
+</body>
+</html>
