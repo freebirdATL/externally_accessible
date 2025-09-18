@@ -86,8 +86,8 @@
   .screen.show{display:flex}
   .time{
     font-variant-numeric:tabular-nums; line-height:1.05; text-align:center;
-    font-weight:900;
-    font-size:clamp(56px, 15vw, 240px);
+    font-weight:500;
+    font-size:clamp(52px, 40vw, 600px);
     letter-spacing:.02em;
   }
   .sub{color:var(--muted); font-size:clamp(12px, 2.4vw, 20px)}
@@ -105,6 +105,16 @@
   /* Micro-details */
   .badge{
     font-size:.72rem; font-weight:700; padding:6px 10px; border-radius:999px; color:#1e40af; background:#eef2ff; border:1px solid #dde3ff
+  }
+  .sr-only{
+    position:absolute;
+    width:1px;
+    height:1px;
+    padding:0;
+    margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    border:0;
   }
 </style>
 </head>
@@ -135,7 +145,7 @@
               <div class="hint">Enter a number and choose units.</div>
             </div>
             <div style="width:170px">
-              <label class="label" for="timerUnits" style="visibility:hidden">Units</label>
+              <label class="label sr-only" for="timerUnits">Units</label>
               <select id="timerUnits">
                 <option value="seconds">seconds</option>
                 <option value="minutes">minutes</option>

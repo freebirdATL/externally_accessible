@@ -296,6 +296,9 @@
     if(metric==="speed") return Math.hypot(st.vx, st.vy);
     return NaN;
   }
+  function metricValueAt(metric, t){
+    return currentMetricValue(metric, kin(t), t);
+  }
   function updateStopCfgFromUI(){
     stopCfg.enabled = !!controls.stopEnable.checked;
     stopCfg.metric  = controls.stopMetric.value;
@@ -311,19 +314,65 @@
     if(stopCfg.metric === "t") stopCfg.left = true;
     else stopCfg.left = !onStart;
   }
-  function shouldAutoStop(t){
-    if(!stopCfg.enabled) return false;
-    const st = kin(t);
-    const v  = currentMetricValue(stopCfg.metric, st, t);
-    const eps = stopEpsilon(stopCfg.metric);
-    if(stopCfg.metric === "t"){
-      return t >= stopCfg.value;
-    } else {
-      const onVal = Math.abs(v - stopCfg.value) <= eps;
-      // Update left flag once we've moved away
-      if(!stopCfg.left && Math.abs(v - stopCfg.value) > eps) stopCfg.left = true;
-      return stopCfg.left && onVal;
+  function findCrossing(metric, t0, t1, val0, val1, target){
+    let lo = t0;
+    let hi = t1;
+    let vLo = val0;
+    let vHi = val1;
+    for(let i=0;i<32;i++){
+      const mid = 0.5 * (lo + hi);
+      const vMid = metricValueAt(metric, mid);
+      if(Math.abs(vMid - target) <= 1e-6 || Math.abs(hi - lo) <= 1e-6) return mid;
+      if((vLo - target) * (vMid - target) <= 0){
+        hi = mid;
+        vHi = vMid;
+      } else {
+        lo = mid;
+        vLo = vMid;
+      }
     }
+    return 0.5 * (lo + hi);
+  }
+  function checkAutoStop(prevT, nextT){
+    const noop = { trigger:false, time: nextT };
+    if(!stopCfg.enabled) return noop;
+
+    const metric = stopCfg.metric;
+    const target = stopCfg.value;
+    const eps = stopEpsilon(metric);
+
+    if(metric === "t"){
+      if(nextT >= target){
+        return { trigger:true, time: Math.max(target, prevT) };
+      }
+      return noop;
+    }
+
+    const valPrev = currentMetricValue(metric, kin(prevT), prevT);
+    const valNext = currentMetricValue(metric, kin(nextT), nextT);
+
+    if(!stopCfg.left){
+      if(Math.abs(valPrev - target) > eps || Math.abs(valNext - target) > eps){
+        stopCfg.left = true;
+      }
+    }
+    if(!stopCfg.left) return noop;
+
+    const diffPrev = valPrev - target;
+    const diffNext = valNext - target;
+
+    if(Math.abs(diffNext) <= eps){
+      if(Math.abs(diffPrev) <= eps){
+        return { trigger:true, time: nextT };
+      }
+      return { trigger:true, time: findCrossing(metric, prevT, nextT, valPrev, valNext, target) };
+    }
+
+    if(diffPrev * diffNext <= 0){
+      return { trigger:true, time: findCrossing(metric, prevT, nextT, valPrev, valNext, target) };
+    }
+
+    return noop;
   }
 
   function params(){
@@ -512,8 +561,21 @@
     const xs = x => lm + (x - tmin)/(tmax - tmin) * (W-lm-rm);
     const xInv = X => tmin + (X - lm)/(W-lm-rm) * (tmax - tmin);
 
-    const arrX = data.map(fx), arrY = data.map(fy);
-    const minQ = Math.min(...arrX, ...arrY), maxQ = Math.max(...arrX, ...arrY);
+    let minQ = Infinity;
+    let maxQ = -Infinity;
+    if (data.length) {
+      for (let i = 0; i < data.length; i++) {
+        const vx = fx(data[i]);
+        const vy = fy(data[i]);
+        if (vx < minQ) minQ = vx;
+        if (vx > maxQ) maxQ = vx;
+        if (vy < minQ) minQ = vy;
+        if (vy > maxQ) maxQ = vy;
+      }
+    } else {
+      minQ = -1;
+      maxQ = 1;
+    }
     const span = (maxQ - minQ) || 1;
     const y0 = minQ - 0.1*span, y1 = maxQ + 0.1*span;
     const ys = y => H-bm - (y - y0)/(y1 - y0) * (H - tm - bm);
@@ -583,9 +645,16 @@
 
   function step(now){
     if(!running) return;
-    const dt=(now-lastStamp)/1000; lastStamp=now; const speed=Number(controls.timeSpeed.value);
-    simT += dt*speed; pushTrace(simT); maybeDot(simT);
-    if(shouldAutoStop(simT)){ running=false; drawAll(); return; }
+    const dt = (now - lastStamp) / 1000;
+    lastStamp = now;
+    const speed = Number(controls.timeSpeed.value);
+    const prevT = simT;
+    const nextT = prevT + dt * speed;
+    const stop = checkAutoStop(prevT, nextT);
+    simT = stop.time;
+    pushTrace(simT);
+    maybeDot(simT);
+    if(stop.trigger){ running=false; drawAll(); return; }
     drawAll(); requestAnimationFrame(step);
   }
 
@@ -613,11 +682,6 @@
 
   controls.x0.addEventListener('input', ()=>{ x0 = Number(controls.x0.value)||0; labels.x0Val.textContent = x0.toFixed(1); reset(false); fitLayout(); });
   controls.y0.addEventListener('input', ()=>{ y0 = Number(controls.y0.value)||0; labels.y0Val.textContent = y0.toFixed(1); reset(false); fitLayout(); });
-
-
-  controls.x0.addEventListener('input', ()=>{ x0 = Number(controls.x0.value)||0; labels.x0Val.textContent = x0.toFixed(1); reset(false); fitLayout(); });
-  controls.y0.addEventListener('input', ()=>{ y0 = Number(controls.y0.value)||0; labels.y0Val.textContent = y0.toFixed(1); reset(false); fitLayout(); });
-
 
   // ---------- Self-tests (non‑intrusive) ----------
   function approx(a,b,eps=1e-9){ return Math.abs(a-b) <= eps*(1+Math.max(1,Math.abs(a),Math.abs(b))); }
